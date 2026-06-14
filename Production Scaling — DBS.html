@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Production Scaling — DBS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --forest: #2C5F2E;
+    --forest-light: #3a7a3d;
+    --forest-muted: #c5dfc5;
+    --forest-pale: #eaf3ea;
+    --slate: #1a1f1a;
+    --slate-mid: #2d342d;
+    --ink: #1a1a1a;
+    --ink-mid: #444;
+    --ink-light: #777;
+    --border: #d0d8d0;
+    --parchment: #fafaf8;
+    --white: #ffffff;
+    --error: #c0392b;
+    --warn: #e67e22;
+    --success: #27ae60;
+    --accent: #1a5276;
+    --radius: 6px;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; scroll-behavior: smooth; }
+  body { font-family: var(--font-body); background: var(--slate); color: var(--ink); min-height: 100vh; }
+
+  /* HEADER */
+  #app-header {
+    background: var(--slate);
+    border-bottom: 2px solid var(--forest);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .header-brand { display: flex; flex-direction: column; gap: 1px; }
+  .header-brand .brand-name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--forest-muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  .header-brand .brand-sub { font-size: 11px; color: #666; letter-spacing: 0.05em; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .header-btn { background: none; border: 1px solid #444; color: #888; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-family: var(--font-mono); transition: all 0.15s; }
+  .header-btn:hover { color: #ccc; border-color: #666; }
+
+  /* LAYOUT */
+  #main { max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 0; }
+
+  /* CONFIG SCREEN */
+  #config-screen { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; }
+  .config-card { background: var(--parchment); border-radius: 10px; padding: 32px 28px; max-width: 560px; width: 100%; display: flex; flex-direction: column; gap: 20px; }
+  .config-title { font-family: var(--font-mono); font-size: 20px; font-weight: 600; color: var(--ink); }
+  .config-subtitle { font-size: 13px; color: var(--ink-light); line-height: 1.5; margin-top: 6px; }
+  .config-steps { background: var(--forest-pale); border-left: 3px solid var(--forest); padding: 14px 16px; border-radius: 0 4px 4px 0; display: flex; flex-direction: column; gap: 10px; }
+  .config-step { font-size: 12px; color: var(--ink-mid); line-height: 1.5; }
+  .config-step strong { font-family: var(--font-mono); color: var(--forest); font-size: 11px; }
+  .config-step code { background: #e8f0e8; padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); font-size: 11px; color: var(--forest); }
+  .config-warning { font-size: 11px; color: var(--warn); background: #fff8f0; border: 1px solid #f0c080; border-radius: 4px; padding: 10px 12px; line-height: 1.5; }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--ink-light); letter-spacing: 0.1em; text-transform: uppercase; }
+  input[type="text"], input[type="url"] {
+    width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 4px;
+    font-family: var(--font-body); font-size: 14px; color: var(--ink); background: var(--white);
+    transition: border-color 0.15s;
+  }
+  input:focus { outline: none; border-color: var(--forest); box-shadow: 0 0 0 3px rgba(44,95,46,0.12); }
+  .btn { padding: 12px 22px; border-radius: var(--radius); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: flex; align-items: center; gap: 8px; white-space: nowrap; justify-content: center; }
+  .btn-primary { background: var(--forest); color: white; }
+  .btn-primary:hover { background: var(--forest-light); }
+
+  /* SCRIPT DISPLAY */
+  .script-block { font-family: monospace; font-size: 10px; height: 180px; background: #f0f0f0; border: 1px solid #ccc; padding: 10px; border-radius: 4px; width: 100%; resize: none; color: #333; line-height: 1.4; overflow-y: scroll; }
+
+  /* LOADING */
+  #loading-screen { display: none; min-height: 60vh; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  .loading-spinner { width: 32px; height: 32px; border: 3px solid rgba(44,95,46,0.2); border-top-color: var(--forest); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  .loading-text { font-family: var(--font-mono); font-size: 12px; color: #888; letter-spacing: 0.08em; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ERROR BANNER */
+  #error-banner { display: none; background: #fdf0f0; border: 1.5px solid #e8c0c0; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; }
+  .error-title { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--error); margin-bottom: 4px; }
+  .error-msg { font-size: 13px; color: var(--ink-mid); line-height: 1.5; }
+
+  /* CATEGORY TABS */
+  #category-nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 20px 0 16px; border-bottom: 1.5px solid #333; margin-bottom: 20px; }
+  .cat-tab { padding: 7px 14px; border: 1.5px solid #444; border-radius: 4px; background: none; color: #999; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .cat-tab:hover { color: var(--forest-muted); border-color: #666; }
+  .cat-tab.active { background: var(--forest); border-color: var(--forest); color: white; }
+  .cat-tab .count { opacity: 0.7; margin-left: 4px; }
+
+  /* RECIPE LIST (left panel concept — using stacked layout for mobile-first) */
+  #browse-panel { display: flex; flex-direction: column; gap: 0; }
+  .recipe-list-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid #333; margin-bottom: 16px; }
+  .recipe-list-title { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: #666; letter-spacing: 0.1em; text-transform: uppercase; }
+  .recipe-count { font-family: var(--font-mono); font-size: 10px; color: #555; }
+  .refresh-btn { background: none; border: 1px solid #3a3a3a; color: #666; padding: 5px 10px; border-radius: 3px; font-family: var(--font-mono); font-size: 10px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 5px; }
+  .refresh-btn:hover { color: var(--forest-muted); border-color: #555; }
+  .refresh-btn svg { width: 12px; height: 12px; }
+
+  /* RECIPE CARDS IN BROWSE */
+  .recipe-card-browse {
+    background: var(--slate-mid);
+    border: 1px solid #333;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .recipe-card-browse:hover { border-color: var(--forest); background: #252b25; }
+  .recipe-card-browse.active { border-color: var(--forest); background: #1e2a1e; border-left: 3px solid var(--forest); }
+  .rcb-info { display: flex; flex-direction: column; gap: 3px; }
+  .rcb-name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: #ddd; }
+  .rcb-meta { font-size: 11px; color: #666; }
+  .rcb-arrow { color: #444; font-size: 16px; flex-shrink: 0; margin-top: 2px; transition: color 0.15s; }
+  .recipe-card-browse:hover .rcb-arrow, .recipe-card-browse.active .rcb-arrow { color: var(--forest-muted); }
+  .empty-state { text-align: center; padding: 40px 20px; font-family: var(--font-mono); font-size: 12px; color: #555; line-height: 1.8; }
+
+  /* DETAIL PANEL */
+  #detail-panel { display: none; }
+
+  /* RECIPE HEADER */
+  .recipe-header-bar {
+    background: var(--parchment);
+    border-radius: var(--radius) var(--radius) 0 0;
+    border: 1.5px solid var(--border);
+    padding: 20px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .recipe-back-btn { background: none; border: none; color: var(--ink-light); font-size: 12px; cursor: pointer; font-family: var(--font-mono); display: flex; align-items: center; gap: 5px; padding: 0; margin-bottom: 4px; transition: color 0.15s; width: fit-content; }
+  .recipe-back-btn:hover { color: var(--forest); }
+  .recipe-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .recipe-title { font-family: var(--font-mono); font-size: 22px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+  .recipe-id-badge { font-family: var(--font-mono); font-size: 9px; color: #aaa; background: #eee; padding: 3px 7px; border-radius: 3px; margin-top: 6px; display: inline-block; }
+  .recipe-meta-row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .recipe-meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .recipe-meta-label { font-family: var(--font-mono); font-size: 9px; color: var(--ink-light); letter-spacing: 0.1em; text-transform: uppercase; }
+  .recipe-meta-value { font-size: 13px; font-weight: 500; color: var(--ink-mid); }
+  .status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; font-family: var(--font-mono); }
+  .status-production { background: #e8f5e9; color: var(--forest); border: 1px solid var(--forest-muted); }
+
+  /* PHOTOS */
+  .photos-strip { display: flex; gap: 10px; overflow-x: auto; padding: 12px 0 4px; }
+  .photo-thumb { width: 120px; height: 80px; border-radius: 4px; object-fit: cover; border: 1.5px solid var(--border); flex-shrink: 0; cursor: pointer; transition: opacity 0.15s; }
+  .photo-thumb:hover { opacity: 0.85; }
+  .photo-lightbox { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.88); z-index: 999; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .photo-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 4px; }
+
+  /* SCALE CONTROLS */
+  .scale-bar {
+    background: var(--parchment);
+    border: 1.5px solid var(--border);
+    border-top: none;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 61px;
+    z-index: 100;
+  }
+  .scale-label { font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--ink-light); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+  .preset-btn { padding: 8px 16px; border: 2px solid var(--border); border-radius: 4px; background: var(--white); font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--ink-mid); cursor: pointer; transition: all 0.15s; }
+  .preset-btn:hover { border-color: var(--forest); color: var(--forest); }
+  .preset-btn.active { background: var(--forest); border-color: var(--forest); color: white; }
+  .scale-input-group { display: flex; align-items: center; gap: 8px; }
+  .scale-number-input { width: 70px; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--ink); text-align: center; background: var(--white); }
+  .scale-number-input:focus { outline: none; border-color: var(--forest); box-shadow: 0 0 0 3px rgba(44,95,46,0.12); }
+  .scale-x-label { font-family: var(--font-mono); font-size: 13px; color: var(--ink-light); }
+  .scale-result-label { font-family: var(--font-mono); font-size: 11px; color: var(--forest); background: var(--forest-pale); border: 1px solid var(--forest-muted); padding: 5px 12px; border-radius: 12px; margin-left: 4px; }
+
+  /* CONTENT SECTIONS */
+  .detail-body {
+    background: var(--parchment);
+    border: 1.5px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    overflow: hidden;
+  }
+  .detail-section { padding: 20px; border-top: 1px solid var(--border); }
+  .detail-section:first-child { border-top: none; }
+  .detail-section-title { font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--ink-light); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .detail-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* INGREDIENT TABLE */
+  .ing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ing-table th { font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); padding: 7px 10px 6px; border-bottom: 2px solid var(--forest-muted); text-align: left; white-space: nowrap; }
+  .ing-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .ing-table tr:last-child td { border-bottom: none; }
+  .ing-table tr:hover td { background: rgba(44,95,46,0.04); }
+  .ing-name { font-weight: 500; color: var(--ink); }
+  .ing-amount-original { font-family: var(--font-mono); font-size: 12px; color: var(--ink-light); }
+  .ing-amount-scaled { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--forest); }
+  .ing-unit { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); }
+  .unit-override { display: inline-block; }
+  .unit-select { border: none; background: transparent; font-family: var(--font-mono); font-size: 11px; color: var(--forest); cursor: pointer; padding: 2px 4px; border-radius: 3px; transition: background 0.15s; }
+  .unit-select:hover { background: var(--forest-pale); }
+  .unit-select:focus { outline: 1px solid var(--forest); }
+
+  /* SUB-RECIPE BADGE */
+  .sub-recipe-row td { background: #f0f5f0; }
+  .sub-recipe-badge { font-family: var(--font-mono); font-size: 9px; background: var(--forest-pale); border: 1px solid var(--forest-muted); color: var(--forest); padding: 2px 6px; border-radius: 10px; margin-left: 6px; font-weight: 600; letter-spacing: 0.05em; }
+  .sub-recipe-expand { background: none; border: none; color: var(--forest); font-family: var(--font-mono); font-size: 10px; cursor: pointer; padding: 2px 6px; border-radius: 3px; transition: background 0.15s; }
+  .sub-recipe-expand:hover { background: var(--forest-pale); }
+  .sub-recipe-breakdown { display: none; }
+  .sub-recipe-breakdown.open { display: table-row-group; }
+  .sub-ing-row td { background: #f8fcf8; padding: 5px 10px 5px 28px; }
+  .sub-ing-row td:first-child { padding-left: 32px; }
+  .sub-ing-name { font-size: 12px; color: var(--ink-mid); }
+  .sub-ing-amount { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--forest-light); }
+  .sub-ing-note { font-size: 11px; color: var(--ink-light); }
+
+  /* BUILD SHEET DISPLAY */
+  .build-dish-block { border: 1.5px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+  .build-dish-block:last-child { margin-bottom: 0; }
+  .build-dish-name-bar { background: var(--forest-pale); border-bottom: 1px solid var(--forest-muted); padding: 9px 14px; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--forest); }
+  .build-comp-table { width: 100%; border-collapse: collapse; }
+  .build-comp-table td { padding: 6px 14px; border-bottom: 1px solid #eee; font-size: 13px; }
+  .build-comp-table tr:last-child td { border-bottom: none; }
+  .build-comp-amount { font-family: var(--font-mono); font-weight: 600; color: var(--forest); width: 100px; }
+  .build-comp-name { color: var(--ink-mid); }
+  .build-method { padding: 10px 14px; background: #f5f5f3; font-size: 12px; color: var(--ink-mid); line-height: 1.5; border-top: 1px solid var(--border); }
+  .build-method-label { font-family: var(--font-mono); font-size: 9px; font-weight: 600; color: var(--ink-light); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+
+  /* INSTRUCTIONS */
+  .instructions-text { font-size: 13px; color: var(--ink-mid); line-height: 1.8; white-space: pre-wrap; }
+  .instructions-step { display: flex; gap: 10px; margin-bottom: 10px; padding: 10px 12px; border-radius: 4px; background: var(--white); border: 1px solid var(--border); }
+  .step-num { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--forest-muted); background: var(--forest-pale); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: var(--ink-mid); line-height: 1.6; }
+
+  /* TECHNIQUE CALLOUT */
+  .technique-block { background: #fffcf0; border-left: 3px solid var(--warn); padding: 12px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: var(--ink-mid); line-height: 1.6; }
+
+  /* EVALUATION DISPLAY */
+  .eval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .eval-grid { grid-template-columns: 1fr; } }
+  .eval-item { background: var(--white); border: 1px solid var(--border); border-radius: 4px; padding: 12px; }
+  .eval-label { font-family: var(--font-mono); font-size: 9px; font-weight: 600; color: var(--ink-light); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .eval-stars { display: flex; gap: 3px; margin-bottom: 6px; }
+  .star { width: 14px; height: 14px; border-radius: 2px; }
+  .star.filled { background: var(--forest); }
+  .star.empty { background: var(--border); }
+  .eval-notes { font-size: 12px; color: var(--ink-light); line-height: 1.4; }
+
+  /* TOAST */
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; transition: transform 0.25s ease; z-index: 999; white-space: nowrap; }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.error { background: var(--error); }
+  #toast.success { background: var(--success); }
+
+  /* READ-ONLY NOTICE */
+  .readonly-banner { background: var(--slate-mid); border: 1px solid #3a3a3a; border-radius: 4px; padding: 8px 14px; font-family: var(--font-mono); font-size: 10px; color: #666; letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px; }
+  .readonly-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--forest-muted); }
+
+  /* PRINT */
+  @media print {
+    body { background: white; }
+    #app-header, .scale-bar, #category-nav, #browse-panel, .recipe-back-btn { display: none !important; }
+    .detail-body { border: none; }
+    .recipe-header-bar { border: none; }
+  }
+</style>
+</head>
+<body>
+
+<header id="app-header">
+  <div class="header-brand">
+    <span class="brand-name">DBS</span>
+    <span class="brand-sub">Production Scaling</span>
+  </div>
+  <div class="header-right">
+    <div class="readonly-banner"><span class="readonly-dot"></span>Read-only — changes via Dev App</div>
+    <button class="header-btn" onclick="resetConfig()">⚙ Settings</button>
+  </div>
+</header>
+
+<!-- CONFIG SCREEN -->
+<div id="config-screen" style="display:none">
+  <div class="config-card">
+    <div>
+      <div class="config-title">Connect to Recipe Sheet</div>
+      <div class="config-subtitle">This app reads recipes marked "Approved for Production" from your Google Sheet. One-time setup — uses a separate read-only endpoint.</div>
+    </div>
+    <div class="config-steps">
+      <div class="config-step"><strong>STEP 1 —</strong> Open your existing Recipe Google Sheet. Go to <strong>Extensions → Apps Script</strong>.</div>
+      <div class="config-step"><strong>STEP 2 —</strong> Create a <strong>new script file</strong> (File → New → Script file) named <code>Production</code>. Paste the read script below into it.</div>
+      <div class="config-step"><strong>STEP 3 —</strong> Deploy it as a new Web App: <strong>Deploy → New Deployment → Web App</strong>. Set <em>Execute as: Me</em>, <em>Who has access: Anyone</em>. Copy the URL.</div>
+      <div class="config-step"><strong>STEP 4 —</strong> Also update your existing <code>doPost</code> script to include a <code>recipeId</code> column — see "Recipe ID Setup" below.</div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">READ SCRIPT — paste into new Apps Script file:</label>
+      <textarea id="read-script-display" class="script-block" readonly></textarea>
+      <button onclick="copyReadScript()" style="margin-top:8px;padding:7px 14px;background:var(--forest);color:white;border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-mono)">COPY READ SCRIPT</button>
+    </div>
+
+    <div class="config-steps" style="border-left-color: var(--warn);">
+      <div class="config-step" style="font-weight:600;color:var(--ink-mid)">Recipe ID Setup (required in Dev App)</div>
+      <div class="config-step">Your Dev App's <code>doPost</code> script needs two changes: (1) add <code>"Recipe ID"</code> to the header row, and (2) generate and write a <code>recipeId</code> for each submission. Add this before <code>sheet.appendRow</code>:</div>
+      <textarea class="script-block" readonly style="height:120px" id="patch-script-display"></textarea>
+      <button onclick="copyPatchScript()" style="margin-top:8px;padding:7px 14px;background:#5a3a00;color:#f0c060;border:1px solid #8a6020;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-mono)">COPY PATCH SCRIPT</button>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">PRODUCTION ENDPOINT URL <span style="color:var(--error)">*</span></label>
+      <input type="text" id="prod-url" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div class="config-warning">Your URL is stored only in this browser. No data passes through any third-party server.</div>
+    <button class="btn btn-primary" onclick="saveConfig()" style="width:100%;">Connect &amp; Load Recipes →</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading approved recipes...</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-main" style="display:none">
+  <div id="main">
+
+    <!-- Error banner -->
+    <div id="error-banner">
+      <div class="error-title">Failed to load recipes</div>
+      <div class="error-msg" id="error-msg"></div>
+    </div>
+
+    <!-- Category tabs -->
+    <div id="category-nav">
+      <button class="cat-tab active" data-cat="all" onclick="filterCategory('all')">All <span class="count" id="count-all"></span></button>
+      <button class="cat-tab" data-cat="Finished/Composed" onclick="filterCategory('Finished/Composed')">Finished / Composed <span class="count" id="count-fc"></span></button>
+      <button class="cat-tab" data-cat="Vegetables" onclick="filterCategory('Vegetables')">Vegetables <span class="count" id="count-veg"></span></button>
+      <button class="cat-tab" data-cat="Soup + Sauce" onclick="filterCategory('Soup + Sauce')">Soup + Sauce <span class="count" id="count-soup"></span></button>
+      <button class="cat-tab" data-cat="Dressing + Condiment" onclick="filterCategory('Dressing + Condiment')">Dressing + Condiment <span class="count" id="count-dress"></span></button>
+    </div>
+
+    <!-- BROWSE PANEL -->
+    <div id="browse-panel">
+      <div class="recipe-list-header">
+        <span class="recipe-list-title">Approved for Production</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="recipe-count" id="visible-count"></span>
+          <button class="refresh-btn" onclick="loadRecipes()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+      <div id="recipe-list"></div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div id="detail-panel">
+
+      <!-- Recipe Header -->
+      <div class="recipe-header-bar">
+        <button class="recipe-back-btn" onclick="closeDetail()">← Back to list</button>
+        <div class="recipe-title-row">
+          <div>
+            <div class="recipe-title" id="detail-title"></div>
+            <div class="recipe-id-badge" id="detail-id"></div>
+          </div>
+          <span class="status-badge status-production">★ Approved</span>
+        </div>
+        <div class="recipe-meta-row" id="detail-meta"></div>
+        <div id="detail-photos" style="display:none"></div>
+      </div>
+
+      <!-- Scale Bar -->
+      <div class="scale-bar">
+        <span class="scale-label">Scale:</span>
+        <button class="preset-btn active" id="preset-1x" onclick="setPreset(1)">1×</button>
+        <button class="preset-btn" id="preset-5x" onclick="setPreset(5)">5×</button>
+        <div class="scale-input-group">
+          <input type="number" class="scale-number-input" id="scale-custom" min="0.1" max="1000" step="0.5" value="1" oninput="setCustomScale(this.value)">
+          <span class="scale-x-label">×</span>
+        </div>
+        <span class="scale-result-label" id="scale-result-label">1× yield</span>
+        <div style="margin-left:auto">
+          <button class="header-btn" onclick="window.print()" title="Print">⎙ Print</button>
+        </div>
+      </div>
+
+      <div class="detail-body">
+
+        <!-- INGREDIENTS -->
+        <div class="detail-section">
+          <div class="detail-section-title">Ingredients</div>
+          <table class="ing-table">
+            <thead>
+              <tr>
+                <th style="width:40%">Ingredient</th>
+                <th style="width:20%">Scaled Amount</th>
+                <th style="width:15%">Unit</th>
+                <th style="width:25%">Original</th>
+              </tr>
+            </thead>
+            <tbody id="ing-body"></tbody>
+          </table>
+        </div>
+
+        <!-- SOURCING NOTES -->
+        <div class="detail-section" id="sourcing-section" style="display:none">
+          <div class="detail-section-title">Sourcing / Allergens</div>
+          <div class="technique-block" style="border-left-color:var(--forest);background:#f0f5f0;" id="sourcing-text"></div>
+        </div>
+
+        <!-- BUILD SHEET -->
+        <div class="detail-section" id="build-section" style="display:none">
+          <div class="detail-section-title">Build Sheet</div>
+          <div id="build-content"></div>
+        </div>
+
+        <!-- INSTRUCTIONS -->
+        <div class="detail-section" id="instructions-section" style="display:none">
+          <div class="detail-section-title">Preparation Method</div>
+          <div id="instructions-content"></div>
+        </div>
+
+        <!-- TECHNIQUES -->
+        <div class="detail-section" id="techniques-section" style="display:none">
+          <div class="detail-section-title">Critical Techniques & QC</div>
+          <div class="technique-block" id="techniques-text"></div>
+        </div>
+
+        <!-- EQUIPMENT -->
+        <div class="detail-section" id="equipment-section" style="display:none">
+          <div class="detail-section-title">Equipment Required</div>
+          <div style="font-size:13px;color:var(--ink-mid);line-height:1.6" id="equipment-text"></div>
+        </div>
+
+        <!-- EVALUATION -->
+        <div class="detail-section" id="eval-section" style="display:none">
+          <div class="detail-section-title">Post-Cook Evaluation</div>
+          <div class="eval-grid" id="eval-content"></div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="detail-section" id="notes-section" style="display:none">
+          <div class="detail-section-title">Additional Notes</div>
+          <div style="font-size:13px;color:var(--ink-mid);line-height:1.6;white-space:pre-wrap" id="notes-text"></div>
+        </div>
+
+      </div><!-- end detail-body -->
+
+    </div><!-- end detail-panel -->
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── SCRIPTS ────────────────────────────────────────────────────────────────
+
+const READ_SCRIPT = `function doGet(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Recipes") || ss.getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return ContentService.createTextOutput(JSON.stringify({result:"success",recipes:[]}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    var headers = data[0];
+    var recipes = [];
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var obj = {};
+      headers.forEach(function(h, idx) { obj[h] = row[idx] || ""; });
+      if (obj["Status"] && obj["Status"].toString().indexOf("Approved for Production") !== -1) {
+        recipes.push(obj);
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({result:"success",recipes:recipes}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({result:"error",message:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+const PATCH_SCRIPT = `// Add to your doPost script BEFORE sheet.appendRow([...]):
+// Generate Recipe ID if not present
+var recipeId = data.recipeId || "";
+if (!recipeId && data.recipeName) {
+  var slug = data.recipeName.toLowerCase()
+    .replace(/[^a-z0-9\\s]/g, "")
+    .trim().replace(/\\s+/g, "_");
+  recipeId = slug + "_" + new Date().getTime();
+}
+// Also update your header row to include "Recipe ID"
+// and add recipeId as first data column in appendRow.`;
+
+// ─── UTILITIES ───────────────────────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return str; // return as-is if unparseable
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ─── STATE ──────────────────────────────────────────────────────────────────
+let allRecipes = [];
+let currentRecipe = null;
+let currentScale = 1;
+let parsedIngredients = [];
+
+// Category mapping: station values → our 4 categories
+const CATEGORY_MAP = {
+  'Finished/Composed': ['hot line', 'grill', 'sauté', 'saute', 'catering', 'chef table', 'bakery', 'pastry', 'other', 'cold', 'pantry', 'salad bar'],
+  'Vegetables': ['vegetable', 'veg', 'salad bar'],
+  'Soup + Sauce': ['soup', 'sauce'],
+  'Dressing + Condiment': ['dressing', 'condiment']
+};
+
+function getRecipeCategory(recipe) {
+  const station = (recipe['Station'] || '').toLowerCase();
+  for (const [cat, keywords] of Object.entries(CATEGORY_MAP)) {
+    if (keywords.some(k => station.includes(k))) return cat;
+  }
+  return 'Finished/Composed';
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+document.getElementById('read-script-display').value = READ_SCRIPT;
+document.getElementById('patch-script-display').value = PATCH_SCRIPT;
+
+window.onload = function() {
+  const savedUrl = localStorage.getItem('dbs_prod_url');
+  if (savedUrl) {
+    showMain();
+    loadRecipes();
+  } else {
+    document.getElementById('config-screen').style.display = 'flex';
+  }
+};
+
+function copyReadScript() {
+  navigator.clipboard.writeText(READ_SCRIPT).then(() => showToast('Read script copied!', 'success'));
+}
+function copyPatchScript() {
+  navigator.clipboard.writeText(PATCH_SCRIPT).then(() => showToast('Patch script copied!', 'success'));
+}
+
+function saveConfig() {
+  const url = document.getElementById('prod-url').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    showToast('Paste a valid Apps Script URL', 'error');
+    return;
+  }
+  localStorage.setItem('dbs_prod_url', url);
+  showMain();
+  loadRecipes();
+}
+
+function resetConfig() {
+  localStorage.removeItem('dbs_prod_url');
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('config-screen').style.display = 'flex';
+  document.getElementById('prod-url').value = '';
+}
+
+function showMain() {
+  document.getElementById('config-screen').style.display = 'none';
+  document.getElementById('app-main').style.display = 'block';
+}
+
+// ─── LOAD RECIPES ────────────────────────────────────────────────────────────
+async function loadRecipes() {
+  const url = localStorage.getItem('dbs_prod_url');
+  if (!url) return;
+
+  document.getElementById('loading-screen').style.display = 'flex';
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('error-banner').style.display = 'none';
+  closeDetail();
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.result === 'error') throw new Error(data.message);
+
+    allRecipes = data.recipes || [];
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app-main').style.display = 'block';
+    updateCounts();
+    renderList('all');
+  } catch (err) {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('app-main').style.display = 'block';
+    document.getElementById('error-banner').style.display = 'block';
+    document.getElementById('error-msg').textContent = err.message + ' — check your Apps Script URL and deployment settings.';
+  }
+}
+
+// ─── CATEGORY FILTER ─────────────────────────────────────────────────────────
+let currentCat = 'all';
+
+function updateCounts() {
+  const all = allRecipes.length;
+  document.getElementById('count-all').textContent = all ? `(${all})` : '';
+  const cats = { 'Finished/Composed': 0, 'Vegetables': 0, 'Soup + Sauce': 0, 'Dressing + Condiment': 0 };
+  allRecipes.forEach(r => { const c = getRecipeCategory(r); if (cats[c] !== undefined) cats[c]++; });
+  document.getElementById('count-fc').textContent = cats['Finished/Composed'] ? `(${cats['Finished/Composed']})` : '';
+  document.getElementById('count-veg').textContent = cats['Vegetables'] ? `(${cats['Vegetables']})` : '';
+  document.getElementById('count-soup').textContent = cats['Soup + Sauce'] ? `(${cats['Soup + Sauce']})` : '';
+  document.getElementById('count-dress').textContent = cats['Dressing + Condiment'] ? `(${cats['Dressing + Condiment']})` : '';
+}
+
+function filterCategory(cat) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === cat));
+  renderList(cat);
+  closeDetail();
+}
+
+function renderList(cat) {
+  const filtered = cat === 'all' ? allRecipes : allRecipes.filter(r => getRecipeCategory(r) === cat);
+  const container = document.getElementById('recipe-list');
+  document.getElementById('visible-count').textContent = `${filtered.length} recipe${filtered.length !== 1 ? 's' : ''}`;
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty-state">No approved recipes in this category yet.<br>Submit and approve recipes through the Dev App.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map((r, i) => {
+    const id = r['Recipe ID'] || r['recipeId'] || '—';
+    const yield_ = r['Target Yield'] || '';
+    const version = r['Version #'] || r['version'] || '';
+    const chef = r['Chef'] || r['chefName'] || '';
+    const date = formatDate(r['Date'] || r['devDate'] || '');
+    const meta = [yield_ && `Yield: ${yield_}`, version && `v${version}`, chef, date].filter(Boolean).join(' · ');
+    return `
+      <div class="recipe-card-browse" onclick="openRecipe(${allRecipes.indexOf(r)})">
+        <div class="rcb-info">
+          <div class="rcb-name">${r['Recipe Name'] || r['recipeName'] || 'Unnamed'}</div>
+          <div class="rcb-meta">${meta || '—'}</div>
+        </div>
+        <span class="rcb-arrow">›</span>
+      </div>`;
+  }).join('');
+}
+
+// ─── OPEN RECIPE ─────────────────────────────────────────────────────────────
+function openRecipe(idx) {
+  currentRecipe = allRecipes[idx];
+  currentScale = 1;
+
+  // Update active state
+  document.querySelectorAll('.recipe-card-browse').forEach((el, i) => {
+    el.classList.toggle('active', allRecipes.indexOf(currentRecipe) === allRecipes.indexOf(allRecipes[i + (currentCat === 'all' ? 0 : 0)]));
+  });
+
+  document.getElementById('browse-panel').style.display = 'none';
+  document.getElementById('detail-panel').style.display = 'block';
+
+  const r = currentRecipe;
+
+  // Title + ID
+  document.getElementById('detail-title').textContent = r['Recipe Name'] || r['recipeName'] || 'Unnamed';
+  const recipeId = r['Recipe ID'] || r['recipeId'] || 'No ID — update Dev App script';
+  document.getElementById('detail-id').textContent = recipeId;
+
+  // Meta
+  const metaItems = [
+    { label: 'Station', value: r['Station'] || r['station'] || '—' },
+    { label: 'Yield', value: r['Target Yield'] || r['targetYield'] || '—' },
+    { label: 'Portion', value: r['Portion Size'] || r['portionSize'] || '—' },
+    { label: 'Version', value: r['Version #'] || r['version'] || '—' },
+    { label: 'Chef', value: r['Chef'] || r['chefName'] || '—' },
+    { label: 'Date', value: formatDate(r['Date'] || r['devDate'] || '') || '—' },
+  ];
+  document.getElementById('detail-meta').innerHTML = metaItems
+    .filter(m => m.value && m.value !== '—')
+    .map(m => `<div class="recipe-meta-item"><div class="recipe-meta-label">${m.label}</div><div class="recipe-meta-value">${m.value}</div></div>`)
+    .join('');
+
+  // Photos
+  renderPhotos(r);
+
+  // Scale reset
+  setPreset(1);
+
+  // Parse ingredients
+  parsedIngredients = parseIngredients(r['Ingredients'] || r['ingredients'] || '');
+
+  // Render all sections
+  renderIngredients();
+  renderSourcing(r);
+  renderBuildSheet(r);
+  renderInstructions(r);
+  renderTechniques(r);
+  renderEquipment(r);
+  renderEval(r);
+  renderNotes(r);
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeDetail() {
+  currentRecipe = null;
+  document.getElementById('detail-panel').style.display = 'none';
+  document.getElementById('browse-panel').style.display = 'flex';
+  document.getElementById('browse-panel').style.flexDirection = 'column';
+}
+
+// ─── PHOTOS ──────────────────────────────────────────────────────────────────
+function convertDriveUrl(url) {
+  if (!url) return null;
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`;
+  return url;
+}
+
+function renderPhotos(r) {
+  const photos = [r['Photo 1'] || r['photo1'], r['Photo 2'] || r['photo2'], r['Photo 3'] || r['photo3']]
+    .filter(Boolean).map(convertDriveUrl).filter(Boolean);
+  const el = document.getElementById('detail-photos');
+  if (!photos.length) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `<div class="photos-strip">${photos.map((src, i) =>
+    `<img class="photo-thumb" src="${src}" alt="Photo ${i+1}" onerror="this.style.display='none'" onclick="openLightbox('${src}')">`
+  ).join('')}</div>`;
+}
+
+function openLightbox(src) {
+  const box = document.createElement('div');
+  box.className = 'photo-lightbox';
+  box.innerHTML = `<img src="${src}" alt="Recipe photo">`;
+  box.onclick = () => box.remove();
+  document.body.appendChild(box);
+}
+
+// ─── INGREDIENT PARSING ──────────────────────────────────────────────────────
+// Format from Dev App: "2 cups | Chicken Stock | 480g | $1.20"
+// Also handles sub-recipe refs: "1 qt | sub:soup_lobster_bisque_20260612 | ..." 
+
+const UNIT_CONVERSIONS = {
+  // volume
+  tsp: { base: 'tsp', factor: 1, family: 'volume' },
+  tbsp: { base: 'tsp', factor: 3, family: 'volume' },
+  'fl oz': { base: 'tsp', factor: 6, family: 'volume' },
+  cup: { base: 'tsp', factor: 48, family: 'volume' },
+  pt: { base: 'tsp', factor: 96, family: 'volume' },
+  qt: { base: 'tsp', factor: 192, family: 'volume' },
+  gal: { base: 'tsp', factor: 768, family: 'volume' },
+  ml: { base: 'ml', factor: 1, family: 'metric_vol' },
+  l: { base: 'ml', factor: 1000, family: 'metric_vol' },
+  // weight
+  oz: { base: 'oz', factor: 1, family: 'weight' },
+  lb: { base: 'oz', factor: 16, family: 'weight' },
+  g: { base: 'g', factor: 1, family: 'metric_wt' },
+  kg: { base: 'g', factor: 1000, family: 'metric_wt' },
+};
+
+const VOLUME_UNITS = ['tsp','tbsp','fl oz','cup','pt','qt','gal','ml','l'];
+const WEIGHT_UNITS = ['oz','lb','g','kg'];
+const ALL_UNITS = [...VOLUME_UNITS, ...WEIGHT_UNITS];
+
+function parseIngredients(raw) {
+  if (!raw) return [];
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  return lines.map(line => {
+    const parts = line.split('|').map(p => p.trim());
+    const amountStr = parts[0] || '';
+    const name = parts[1] || '';
+    const weightStr = parts[2] || '';
+    const costStr = parts[3] || '';
+
+    // Detect sub-recipe
+    const isSubRecipe = name.startsWith('sub:');
+    const subRecipeId = isSubRecipe ? name.replace('sub:', '') : null;
+
+    // Parse numeric amount + unit from amountStr
+    const parsed = parseAmountString(amountStr);
+
+    return {
+      raw: amountStr,
+      name: isSubRecipe ? (subRecipeId || name) : name,
+      isSubRecipe,
+      subRecipeId,
+      amount: parsed.amount,
+      unit: parsed.unit,
+      unitFamily: parsed.unitFamily,
+      weight: weightStr,
+      cost: parseFloat(costStr.replace('$','')) || 0
+    };
+  });
+}
+
+function parseAmountString(str) {
+  if (!str) return { amount: 0, unit: '', unitFamily: 'count' };
+
+  // Try to extract number (handles fractions like "1/2", mixed "2 1/2")
+  let numStr = '', unit = '';
+  const mixedMatch = str.match(/^(\d+)\s+(\d+)\/(\d+)\s*(.*)/);
+  const fracMatch = str.match(/^(\d+)\/(\d+)\s*(.*)/);
+  const numMatch = str.match(/^([\d.]+)\s*(.*)/);
+
+  if (mixedMatch) {
+    numStr = parseFloat(mixedMatch[1]) + parseFloat(mixedMatch[2]) / parseFloat(mixedMatch[3]);
+    unit = mixedMatch[4].trim().toLowerCase();
+  } else if (fracMatch) {
+    numStr = parseFloat(fracMatch[1]) / parseFloat(fracMatch[2]);
+    unit = fracMatch[3].trim().toLowerCase();
+  } else if (numMatch) {
+    numStr = parseFloat(numMatch[1]);
+    unit = numMatch[2].trim().toLowerCase();
+  } else {
+    return { amount: 0, unit: str, unitFamily: 'text' };
+  }
+
+  const amount = parseFloat(numStr) || 0;
+  const unitFamily = VOLUME_UNITS.includes(unit) ? 'volume' :
+                     WEIGHT_UNITS.includes(unit) ? 'weight' : 'count';
+
+  return { amount, unit, unitFamily };
+}
+
+// Auto-scale: when result > threshold, suggest larger unit
+function smartScale(amount, unit, factor) {
+  const scaled = amount * factor;
+  const unitInfo = UNIT_CONVERSIONS[unit];
+  if (!unitInfo) return { value: scaled, unit };
+
+  const baseAmount = scaled * unitInfo.factor;
+  const family = unitInfo.family;
+
+  if (family === 'volume') {
+    if (baseAmount >= 768) return { value: +(baseAmount / 768).toFixed(2), unit: 'gal' };
+    if (baseAmount >= 192) return { value: +(baseAmount / 192).toFixed(2), unit: 'qt' };
+    if (baseAmount >= 96) return { value: +(baseAmount / 96).toFixed(2), unit: 'pt' };
+    if (baseAmount >= 48) return { value: +(baseAmount / 48).toFixed(2), unit: 'cup' };
+    if (baseAmount >= 6) return { value: +(baseAmount / 6).toFixed(2), unit: 'fl oz' };
+    if (baseAmount >= 3) return { value: +(baseAmount / 3).toFixed(2), unit: 'tbsp' };
+    return { value: +baseAmount.toFixed(2), unit: 'tsp' };
+  }
+  if (family === 'weight') {
+    if (baseAmount >= 16) return { value: +(baseAmount / 16).toFixed(2), unit: 'lb' };
+    return { value: +baseAmount.toFixed(2), unit: 'oz' };
+  }
+  if (family === 'metric_vol') {
+    const base = scaled * unitInfo.factor;
+    if (base >= 1000) return { value: +(base / 1000).toFixed(2), unit: 'l' };
+    return { value: +base.toFixed(1), unit: 'ml' };
+  }
+  if (family === 'metric_wt') {
+    const base = scaled * unitInfo.factor;
+    if (base >= 1000) return { value: +(base / 1000).toFixed(2), unit: 'kg' };
+    return { value: +base.toFixed(0), unit: 'g' };
+  }
+  return { value: +scaled.toFixed(2), unit };
+}
+
+function formatAmount(val) {
+  if (val === Math.floor(val)) return val.toString();
+  // Try to express as fraction for common amounts
+  const fracs = [[0.25,'¼'],[0.5,'½'],[0.75,'¾'],[0.333,'⅓'],[0.667,'⅔'],[0.125,'⅛'],[0.375,'⅜'],[0.625,'⅝'],[0.875,'⅞']];
+  const whole = Math.floor(val);
+  const rem = val - whole;
+  for (const [dec, sym] of fracs) {
+    if (Math.abs(rem - dec) < 0.02) return whole > 0 ? `${whole} ${sym}` : sym;
+  }
+  return val.toFixed(2).replace(/\.?0+$/, '');
+}
+
+// ─── RENDER INGREDIENTS ───────────────────────────────────────────────────────
+function renderIngredients() {
+  const tbody = document.getElementById('ing-body');
+  if (!parsedIngredients.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--ink-light);font-size:13px;padding:16px">No ingredients found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  parsedIngredients.forEach((ing, idx) => {
+    if (ing.isSubRecipe) {
+      renderSubRecipeRow(tbody, ing, idx);
+    } else {
+      renderIngredientRow(tbody, ing, idx);
+    }
+  });
+}
+
+function renderIngredientRow(tbody, ing, idx) {
+  const tr = document.createElement('tr');
+  tr.dataset.idx = idx;
+
+  let scaledDisplay = '';
+  let unitDisplay = '';
+  let unitSelector = '';
+
+  if (ing.unitFamily === 'text' || !ing.unit) {
+    scaledDisplay = `${formatAmount(ing.amount * currentScale)} ${ing.unit}`.trim();
+    unitDisplay = '';
+  } else if (ing.unitFamily === 'count') {
+    scaledDisplay = formatAmount(ing.amount * currentScale);
+    unitDisplay = ing.unit;
+  } else {
+    const scaled = smartScale(ing.amount, ing.unit, currentScale);
+    scaledDisplay = formatAmount(scaled.value);
+    unitDisplay = scaled.unit;
+
+    // Unit override selector
+    const relevantUnits = ing.unitFamily === 'volume' ? VOLUME_UNITS :
+                          ing.unitFamily === 'weight' ? WEIGHT_UNITS : [];
+    if (relevantUnits.length) {
+      unitSelector = `<select class="unit-select" data-idx="${idx}" onchange="overrideUnit(${idx}, this.value)">
+        ${relevantUnits.map(u => `<option value="${u}" ${u === scaled.unit ? 'selected' : ''}>${u}</option>`).join('')}
+      </select>`;
+    }
+  }
+
+  tr.innerHTML = `
+    <td class="ing-name">${ing.name}</td>
+    <td class="ing-amount-scaled">${scaledDisplay}</td>
+    <td>${unitSelector || `<span class="ing-unit">${unitDisplay}</span>`}</td>
+    <td class="ing-amount-original">${ing.raw}</td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// Sub-recipe row with cascade expand
+function renderSubRecipeRow(tbody, ing, idx) {
+  const tr = document.createElement('tr');
+  tr.className = 'sub-recipe-row';
+  tr.dataset.idx = idx;
+
+  const scaledStr = ing.amount ? `${formatAmount(ing.amount * currentScale)} ${ing.unit}`.trim() : '—';
+
+  tr.innerHTML = `
+    <td>
+      <span class="ing-name">${ing.name}</span>
+      <span class="sub-recipe-badge">SUB-RECIPE</span>
+    </td>
+    <td class="ing-amount-scaled">${scaledStr}</td>
+    <td></td>
+    <td class="ing-amount-original">
+      ${ing.raw}
+      <button class="sub-recipe-expand" onclick="toggleSubRecipe('${ing.name}', ${idx}, this)">▶ Expand</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+
+  // Breakdown group (hidden until expanded)
+  const breakdownGroup = document.createElement('tbody');
+  breakdownGroup.id = `sub-breakdown-${idx}`;
+  breakdownGroup.className = 'sub-recipe-breakdown';
+  tbody.parentElement.appendChild(breakdownGroup);
+}
+
+function toggleSubRecipe(recipeId, idx, btn) {
+  const group = document.getElementById(`sub-breakdown-${idx}`);
+  const isOpen = group.classList.contains('open');
+
+  if (isOpen) {
+    group.classList.remove('open');
+    group.innerHTML = '';
+    btn.textContent = '▶ Expand';
+    return;
+  }
+
+  // Find the sub-recipe in allRecipes
+  const subRecipe = allRecipes.find(r =>
+    (r['Recipe ID'] || r['recipeId'] || '') === recipeId ||
+    (r['Recipe Name'] || r['recipeName'] || '').toLowerCase().replace(/\s+/g,'_').includes(recipeId.toLowerCase())
+  );
+
+  if (!subRecipe) {
+    group.innerHTML = `<tr class="sub-ing-row"><td colspan="4" style="color:var(--ink-light);font-size:12px;padding:8px 10px 8px 28px">Sub-recipe "${recipeId}" not found in approved recipes. Ensure it's approved and refresh.</td></tr>`;
+    group.classList.add('open');
+    btn.textContent = '▼ Collapse';
+    return;
+  }
+
+  const subIngredients = parseIngredients(subRecipe['Ingredients'] || subRecipe['ingredients'] || '');
+  const parentIng = parsedIngredients[idx];
+
+  // Scale factor for sub-recipe: if parent ingredient specifies qty of the sub-recipe,
+  // we scale the sub-recipe's own base yield to match the amount needed × current scale
+  const subScaleFactor = currentScale;
+
+  group.innerHTML = subIngredients.map(si => {
+    if (si.unitFamily === 'text' || !si.unit) {
+      const val = `${formatAmount(si.amount * subScaleFactor)} ${si.unit}`.trim();
+      return `<tr class="sub-ing-row"><td class="sub-ing-name">↳ ${si.name}</td><td class="sub-ing-amount">${val}</td><td></td><td class="sub-ing-note">${si.raw}</td></tr>`;
+    }
+    const scaled = smartScale(si.amount, si.unit, subScaleFactor);
+    return `<tr class="sub-ing-row"><td class="sub-ing-name">↳ ${si.name}</td><td class="sub-ing-amount">${formatAmount(scaled.value)} ${scaled.unit}</td><td></td><td class="sub-ing-note">${si.raw}</td></tr>`;
+  }).join('');
+
+  group.classList.add('open');
+  btn.textContent = '▼ Collapse';
+}
+
+// Manual unit override
+function overrideUnit(idx, targetUnit) {
+  const ing = parsedIngredients[idx];
+  if (!ing) return;
+
+  const unitInfo = UNIT_CONVERSIONS[ing.unit];
+  const targetInfo = UNIT_CONVERSIONS[targetUnit];
+  if (!unitInfo || !targetInfo) return;
+
+  // Convert: to base, then to target
+  const baseAmount = ing.amount * currentScale * unitInfo.factor;
+  const converted = baseAmount / targetInfo.factor;
+
+  const tr = document.querySelector(`tr[data-idx="${idx}"]`);
+  if (tr) {
+    const scaledCell = tr.querySelector('.ing-amount-scaled');
+    if (scaledCell) scaledCell.textContent = formatAmount(+converted.toFixed(3));
+  }
+}
+
+// ─── SCALE CONTROLS ───────────────────────────────────────────────────────────
+function setPreset(factor) {
+  currentScale = factor;
+  document.getElementById('scale-custom').value = factor;
+  document.getElementById('preset-1x').classList.toggle('active', factor === 1);
+  document.getElementById('preset-5x').classList.toggle('active', factor === 5);
+  updateScaleLabel();
+  renderIngredients();
+}
+
+function setCustomScale(val) {
+  const f = parseFloat(val);
+  if (isNaN(f) || f <= 0) return;
+  currentScale = f;
+  document.getElementById('preset-1x').classList.toggle('active', f === 1);
+  document.getElementById('preset-5x').classList.toggle('active', f === 5);
+  updateScaleLabel();
+  renderIngredients();
+}
+
+function updateScaleLabel() {
+  const r = currentRecipe;
+  if (!r) return;
+  const baseYield = r['Target Yield'] || r['targetYield'] || 'base yield';
+  document.getElementById('scale-result-label').textContent =
+    currentScale === 1 ? `${baseYield}` : `${currentScale}× — ${currentScale}× of ${baseYield}`;
+}
+
+// ─── SECTIONS ─────────────────────────────────────────────────────────────────
+function renderSourcing(r) {
+  const text = r['Sourcing Notes'] || r['sourcingNotes'] || '';
+  const sec = document.getElementById('sourcing-section');
+  if (!text.trim()) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('sourcing-text').textContent = text;
+}
+
+function renderBuildSheet(r) {
+  const raw = r['Build Sheet'] || r['buildSheet'] || '';
+  const sec = document.getElementById('build-section');
+  if (!raw.trim()) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  // Parse build sheet format:
+  // DISH: Name\nCOMPONENTS:\n  amount — component\nCOOKING: ...\nPLATING: ...
+  const dishes = raw.split(/---+/).map(s => s.trim()).filter(Boolean);
+  const container = document.getElementById('build-content');
+  container.innerHTML = dishes.map(dish => {
+    const lines = dish.split('\n').map(l => l.trim()).filter(Boolean);
+    const nameMatch = lines.find(l => l.startsWith('DISH:'));
+    const dishName = nameMatch ? nameMatch.replace('DISH:', '').trim() : 'Dish';
+
+    const compStart = lines.findIndex(l => l === 'COMPONENTS:');
+    const cookingLine = lines.find(l => l.startsWith('COOKING:'));
+    const platingLine = lines.find(l => l.startsWith('PLATING:'));
+
+    const components = [];
+    if (compStart !== -1) {
+      for (let i = compStart + 1; i < lines.length; i++) {
+        const l = lines[i];
+        if (l.startsWith('COOKING:') || l.startsWith('PLATING:') || l.startsWith('DISH:')) break;
+        components.push(l);
+      }
+    }
+
+    const cooking = cookingLine ? cookingLine.replace('COOKING:', '').trim() : '';
+    const plating = platingLine ? platingLine.replace('PLATING:', '').trim() : '';
+
+    const compsHtml = components.map(c => {
+      const parts = c.split('—');
+      const amt = parts[0]?.trim() || '';
+      const cname = parts.slice(1).join('—').trim();
+      return `<tr><td class="build-comp-amount">${amt}</td><td class="build-comp-name">${cname}</td></tr>`;
+    }).join('');
+
+    return `
+      <div class="build-dish-block">
+        <div class="build-dish-name-bar">${dishName}</div>
+        ${compsHtml ? `<table class="build-comp-table">${compsHtml}</table>` : ''}
+        ${cooking ? `<div class="build-method"><div class="build-method-label">Cooking / To-Order</div>${cooking}</div>` : ''}
+        ${plating ? `<div class="build-method" style="border-top:1px solid var(--border)"><div class="build-method-label">Plating</div>${plating}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function renderInstructions(r) {
+  const raw = r['Instructions'] || r['instructions'] || '';
+  const sec = document.getElementById('instructions-section');
+  if (!raw.trim()) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  // Try to parse numbered steps
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const stepLines = lines.filter(l => /^\d+\./.test(l));
+
+  const container = document.getElementById('instructions-content');
+  if (stepLines.length > 1) {
+    container.innerHTML = stepLines.map((l, i) => {
+      const text = l.replace(/^\d+\.\s*/, '');
+      return `<div class="instructions-step"><span class="step-num">${i+1}</span><span class="step-text">${text}</span></div>`;
+    }).join('');
+  } else {
+    container.innerHTML = `<div class="instructions-text">${raw}</div>`;
+  }
+}
+
+function renderTechniques(r) {
+  const text = r['Techniques'] || r['techniques'] || '';
+  const sec = document.getElementById('techniques-section');
+  if (!text.trim()) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('techniques-text').textContent = text;
+}
+
+function renderEquipment(r) {
+  const text = r['Equipment'] || r['equipment'] || '';
+  const sec = document.getElementById('equipment-section');
+  if (!text.trim()) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('equipment-text').textContent = text;
+}
+
+function renderEval(r) {
+  const cats = [
+    { key: 'Flavor', rKey: 'Flavor Rating', nKey: 'Flavor Notes' },
+    { key: 'Appearance', rKey: 'Appearance Rating', nKey: 'Appearance Notes' },
+    { key: 'Aroma', rKey: 'Aroma Rating', nKey: 'Aroma Notes' },
+    { key: 'Difficulty', rKey: 'Difficulty Rating', nKey: 'Difficulty Notes' },
+  ];
+
+  const sec = document.getElementById('eval-section');
+  const hasAny = cats.some(c => r[c.rKey] || r[c.nKey]);
+  if (!hasAny) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  document.getElementById('eval-content').innerHTML = cats.map(c => {
+    const rating = parseInt(r[c.rKey]) || 0;
+    const notes = r[c.nKey] || '';
+    const stars = Array.from({length:5}, (_,i) =>
+      `<div class="star ${i < rating ? 'filled' : 'empty'}"></div>`).join('');
+    return `<div class="eval-item">
+      <div class="eval-label">${c.key}</div>
+      <div class="eval-stars">${stars}<span style="font-family:var(--font-mono);font-size:11px;color:var(--forest);margin-left:6px">${rating > 0 ? rating+'/5' : '—'}</span></div>
+      ${notes ? `<div class="eval-notes">${notes}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderNotes(r) {
+  const text = r['Additional Notes'] || r['additionalNotes'] || '';
+  const sec = document.getElementById('notes-section');
+  if (!text.trim()) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  document.getElementById('notes-text').textContent = text;
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  setTimeout(() => { t.className = type; }, 3000);
+}
+</script>
+</body>
+</html>
