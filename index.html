@@ -32,7 +32,6 @@
   html { font-size: 16px; scroll-behavior: smooth; }
   body { font-family: var(--font-body); background: var(--slate); color: var(--ink); min-height: 100vh; }
 
-  /* HEADER */
   #app-header {
     background: var(--slate);
     border-bottom: 2px solid var(--forest);
@@ -47,22 +46,69 @@
   .header-brand { display: flex; flex-direction: column; gap: 1px; }
   .header-brand .brand-name { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--forest-muted); letter-spacing: 0.12em; text-transform: uppercase; }
   .header-brand .brand-sub { font-size: 11px; color: #666; letter-spacing: 0.05em; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
   .header-settings { background: none; border: 1px solid #444; color: #888; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-family: var(--font-mono); }
   .header-settings:hover { color: #ccc; border-color: #666; }
 
-  /* MAIN */
+  #edit-banner {
+    display: none;
+    background: #fff8e6;
+    border-bottom: 2px solid var(--warn);
+    padding: 10px 20px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  #edit-banner.visible { display: flex; }
+  .edit-banner-text { font-family: var(--font-mono); font-size: 12px; color: #8a5a00; font-weight: 600; letter-spacing: 0.05em; }
+  .edit-banner-name { color: var(--warn); }
+  .btn-clear-edit { background: none; border: 1px solid #e0a040; color: #8a5a00; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-family: var(--font-mono); cursor: pointer; font-weight: 600; }
+  .btn-clear-edit:hover { background: #ffe8b0; }
+
   #main { max-width: 760px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 32px; }
 
-  /* SECTION HEADS */
+  #load-panel {
+    background: var(--slate-mid);
+    border: 1.5px solid #3a4a3a;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .load-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .load-panel-header:hover { background: rgba(255,255,255,0.03); }
+  .load-panel-label { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--forest-muted); letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .load-panel-label .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--forest-muted); }
+  .load-panel-toggle { font-family: var(--font-mono); font-size: 18px; color: #555; line-height: 1; transition: transform 0.2s; }
+  .load-panel-toggle.open { transform: rotate(45deg); color: var(--forest-muted); }
+  .load-panel-body { display: none; padding: 0 16px 16px; border-top: 1px solid #3a4a3a; }
+  .load-panel-body.open { display: block; }
+  .load-instructions { font-size: 12px; color: #777; margin: 12px 0 10px; line-height: 1.5; }
+  .load-controls { display: flex; gap: 8px; align-items: flex-end; }
+  .load-controls select { flex: 1; padding: 9px 11px; border: 1.5px solid #3a4a3a; border-radius: 4px; font-family: var(--font-body); font-size: 13px; color: #ccc; background: #1a1f1a; -webkit-appearance: none; appearance: none; }
+  .load-controls select:focus { outline: none; border-color: var(--forest); }
+  .load-controls select option { background: #1a1f1a; }
+  .btn-fetch { padding: 9px 14px; background: none; border: 1.5px solid #3a4a3a; border-radius: 4px; color: #888; font-family: var(--font-mono); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .btn-fetch:hover { border-color: var(--forest-muted); color: var(--forest-muted); }
+  .btn-load-recipe { padding: 9px 16px; background: var(--forest); border: none; border-radius: 4px; color: white; font-family: var(--font-mono); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .btn-load-recipe:hover { background: var(--forest-light); }
+  .btn-load-recipe:disabled { opacity: 0.4; cursor: not-allowed; }
+  .load-status { font-size: 11px; color: #666; margin-top: 8px; font-family: var(--font-mono); }
+  .load-status.ok { color: var(--success); }
+  .load-status.err { color: var(--error); }
+
   .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
   .section-number { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--forest-muted); letter-spacing: 0.1em; background: var(--slate-mid); padding: 3px 8px; border-radius: 3px; border: 1px solid #3a3a3a; white-space: nowrap; }
   .section-title { font-family: var(--font-mono); font-size: 18px; font-weight: 600; color: var(--white); letter-spacing: 0.02em; }
   .section-divider { height: 2px; background: linear-gradient(90deg, var(--forest) 0%, transparent 100%); margin-bottom: 8px; }
 
-  /* CARD */
   .card { background: var(--parchment); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
-  /* FIELDS */
   .field-row { display: grid; gap: 12px; }
   .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
   .field-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
@@ -80,7 +126,6 @@
   textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
   input[type="number"] { -moz-appearance: textfield; }
 
-  /* INGREDIENT TABLE */
   #ingredient-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   #ingredient-table th { font-family: var(--font-mono); font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); padding: 8px 8px 6px; border-bottom: 2px solid var(--forest-muted); text-align: left; white-space: nowrap; }
   #ingredient-table td { padding: 4px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -96,7 +141,6 @@
   .cost-label { font-family: var(--font-mono); font-size: 11px; color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.08em; }
   .cost-value { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--forest); }
 
-  /* RATINGS */
   .rating-group { display: flex; flex-direction: column; gap: 8px; }
   .rating-label-row { display: flex; align-items: center; justify-content: space-between; }
   .rating-title { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--ink-mid); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -107,20 +151,19 @@
   .rating-btn.selected { background: var(--forest); border-color: var(--forest); color: white; }
   .rating-end-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-light); letter-spacing: 0.05em; padding: 0 2px; }
 
-  /* STATUS */
   .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .status-btn { padding: 12px; border: 2px solid var(--border); border-radius: 4px; background: var(--white); font-size: 12px; font-weight: 500; color: var(--ink-mid); cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3; }
   .status-btn:hover { border-color: var(--forest); color: var(--forest); }
   .status-btn.selected { border-color: var(--forest); background: var(--forest-pale); color: var(--forest); font-weight: 600; }
 
-  /* SUBMIT ROW */
   .submit-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
   .btn { padding: 12px 22px; border-radius: var(--radius); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
   .btn-submit { background: var(--forest); color: white; font-size: 15px; padding: 14px 28px; justify-content: center; }
   .btn-submit:hover { background: var(--forest-light); }
   .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  #submit-btn.editing { background: var(--warn); }
+  #submit-btn.editing:hover { background: #cf6d17; }
 
-  /* BUILD SHEET */
   .build-dish { display: flex; flex-direction: column; gap: 0; border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   .build-dish-header { display: flex; align-items: center; justify-content: space-between; background: var(--forest-pale); border-bottom: 1.5px solid var(--forest-muted); padding: 10px 12px; gap: 8px; }
   .build-dish-header input { border: none; background: transparent; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--forest); width: 100%; padding: 0; }
@@ -140,10 +183,8 @@
   #add-dish-btn { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: var(--forest-pale); border: 1.5px dashed var(--forest-muted); border-radius: 4px; color: var(--forest); font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; transition: all 0.15s; }
   #add-dish-btn:hover { background: var(--forest-muted); border-color: var(--forest); }
 
-  /* PHOTO */
   .photo-hint { font-size: 11px; color: var(--ink-light); line-height: 1.5; font-style: italic; }
 
-  /* CONFIG */
   #config-screen { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; }
   .config-card { background: var(--parchment); border-radius: 10px; padding: 32px 28px; max-width: 500px; width: 100%; display: flex; flex-direction: column; gap: 20px; }
   .config-title { font-family: var(--font-mono); font-size: 20px; font-weight: 600; color: var(--ink); }
@@ -155,20 +196,17 @@
   .btn-primary { background: var(--forest); color: white; flex: 1; justify-content: center; }
   .btn-primary:hover { background: var(--forest-light); }
 
-  /* SUCCESS */
   #success-screen { display: none; min-height: 100vh; align-items: center; justify-content: center; padding: 40px 16px; }
   .success-card { background: var(--parchment); border-radius: 10px; padding: 40px 32px; max-width: 460px; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
   .success-icon { width: 60px; height: 60px; background: var(--forest-pale); border: 2px solid var(--forest); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; }
   .success-title { font-family: var(--font-mono); font-size: 20px; font-weight: 600; color: var(--ink); }
   .success-sub { font-size: 14px; color: var(--ink-light); line-height: 1.5; }
 
-  /* TOAST */
   #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; transition: transform 0.25s ease; z-index: 999; white-space: nowrap; }
   #toast.show { transform: translateX(-50%) translateY(0); }
   #toast.error { background: var(--error); }
   #toast.success { background: var(--success); }
 
-  /* SPINNER */
   .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; }
   .btn-submit.loading .spinner { display: block; }
   .btn-submit.loading .btn-text { opacity: 0.7; }
@@ -185,10 +223,16 @@
     <span class="brand-name">DBS</span>
     <span class="brand-sub">Recipe Development</span>
   </div>
-  <button class="header-settings" onclick="resetConfig()">⚙ Settings</button>
+  <div class="header-right">
+    <button class="header-settings" onclick="resetConfig()">⚙ Settings</button>
+  </div>
 </header>
 
-<!-- CONFIG SCREEN -->
+<div id="edit-banner">
+  <span class="edit-banner-text">EDITING — <span class="edit-banner-name" id="edit-banner-name"></span></span>
+  <button class="btn-clear-edit" onclick="clearEditMode()">✕ Start New Recipe Instead</button>
+</div>
+
 <div id="config-screen" style="display:none">
   <div class="config-card">
     <div>
@@ -197,13 +241,8 @@
     </div>
     <div class="config-steps">
       <div class="config-step"><strong>STEP 1 —</strong> Create a new Google Sheet. Name the first tab <em>Recipes</em>.</div>
-      <div class="config-step"><strong>STEP 2 —</strong> Go to <strong>Extensions → Apps Script</strong>. Delete any existing code and paste the script below, then click <strong>Deploy → New Deployment → Web App</strong>. Set <em>Execute as: Me</em> and <em>Who has access: Anyone</em>. Copy the Web App URL.</div>
+      <div class="config-step"><strong>STEP 2 —</strong> Go to <strong>Extensions → Apps Script</strong>. Delete any existing code and paste the script, then click <strong>Deploy → New Deployment → Web App</strong>. Set <em>Execute as: Me</em> and <em>Who has access: Anyone</em>. Copy the Web App URL.</div>
       <div class="config-step"><strong>STEP 3 —</strong> Paste that URL into the field below and click Connect.</div>
-    </div>
-    <div>
-      <div class="field-label" style="color:#555;margin-bottom:8px">APPS SCRIPT CODE — paste into your script editor:</div>
-      <textarea id="script-display" readonly style="font-family:monospace;font-size:10px;height:160px;background:#f0f0f0;border:1px solid #ccc;padding:10px;border-radius:4px;width:100%;resize:none;color:#333;line-height:1.4"></textarea>
-      <button onclick="copyScript()" style="margin-top:8px;padding:7px 14px;background:var(--forest);color:white;border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-mono)">COPY SCRIPT</button>
     </div>
     <div class="field-group">
       <label class="field-label">GOOGLE APPS SCRIPT WEB APP URL <span class="required">*</span></label>
@@ -218,11 +257,30 @@
   </div>
 </div>
 
-<!-- MAIN APP -->
 <div id="app-form" style="display:none">
   <div id="main">
 
-    <!-- 01 IDENTIFICATION -->
+    <div id="load-panel">
+      <div class="load-panel-header" onclick="toggleLoadPanel()">
+        <div class="load-panel-label">
+          <span class="dot"></span>
+          Load a Recipe to Edit
+        </div>
+        <span class="load-panel-toggle" id="load-toggle">+</span>
+      </div>
+      <div class="load-panel-body" id="load-panel-body">
+        <p class="load-instructions">Fetch your recipes from Sheets, choose one from the list, then load it into the form to edit and re-save.</p>
+        <div class="load-controls">
+          <select id="recipe-select" disabled>
+            <option value="">— fetch recipes first —</option>
+          </select>
+          <button class="btn-fetch" onclick="fetchRecipes()">Fetch Recipes</button>
+          <button class="btn-load-recipe" id="btn-load" onclick="loadSelectedRecipe()" disabled>Load →</button>
+        </div>
+        <div class="load-status" id="load-status"></div>
+      </div>
+    </div>
+
     <div>
       <div class="section-head"><span class="section-number">01</span><span class="section-title">Recipe Identification</span></div>
       <div class="section-divider"></div>
@@ -294,7 +352,6 @@
       </div>
     </div>
 
-    <!-- 02 INGREDIENTS -->
     <div>
       <div class="section-head"><span class="section-number">02</span><span class="section-title">Ingredients</span></div>
       <div class="section-divider"></div>
@@ -327,7 +384,6 @@
       </div>
     </div>
 
-    <!-- 03 BUILD SHEET -->
     <div>
       <div class="section-head"><span class="section-number">03</span><span class="section-title">Build Sheet</span></div>
       <div class="section-divider"></div>
@@ -338,7 +394,6 @@
       <button id="add-dish-btn" onclick="addDish()">+ Add Dish</button>
     </div>
 
-    <!-- 04 METHOD -->
     <div>
       <div class="section-head"><span class="section-number">04</span><span class="section-title">Preparation Method</span></div>
       <div class="section-divider"></div>
@@ -360,14 +415,12 @@
       </div>
     </div>
 
-    <!-- 05 EVALUATION -->
     <div>
       <div class="section-head"><span class="section-number">05</span><span class="section-title">Post-Cook Evaluation</span></div>
       <div class="section-divider"></div>
     </div>
     <div class="card">
       <p class="field-hint" style="font-style:italic">Complete after cooking. Tap a number to rate.</p>
-
       <div class="rating-group">
         <div class="rating-label-row"><span class="rating-title">Flavor</span><span class="rating-value-display" id="rating-display-flavor">—</span></div>
         <div class="rating-scale" id="rating-flavor">
@@ -383,9 +436,7 @@
         <label class="field-label">Flavor Notes</label>
         <textarea id="flavor-notes" style="min-height:60px"></textarea>
       </div>
-
       <hr class="divider">
-
       <div class="rating-group">
         <div class="rating-label-row"><span class="rating-title">Appearance</span><span class="rating-value-display" id="rating-display-appearance">—</span></div>
         <div class="rating-scale" id="rating-appearance">
@@ -401,9 +452,7 @@
         <label class="field-label">Appearance Notes</label>
         <textarea id="appearance-notes" style="min-height:60px"></textarea>
       </div>
-
       <hr class="divider">
-
       <div class="rating-group">
         <div class="rating-label-row"><span class="rating-title">Aroma</span><span class="rating-value-display" id="rating-display-aroma">—</span></div>
         <div class="rating-scale" id="rating-aroma">
@@ -419,9 +468,7 @@
         <label class="field-label">Aroma Notes</label>
         <textarea id="aroma-notes" style="min-height:50px"></textarea>
       </div>
-
       <hr class="divider">
-
       <div class="rating-group">
         <div class="rating-label-row"><span class="rating-title">Execution Difficulty</span><span class="rating-value-display" id="rating-display-difficulty">—</span></div>
         <div class="rating-scale" id="rating-difficulty">
@@ -439,13 +486,12 @@
       </div>
     </div>
 
-    <!-- 06 PHOTOS -->
     <div>
       <div class="section-head"><span class="section-number">06</span><span class="section-title">Photos</span></div>
       <div class="section-divider"></div>
     </div>
     <div class="card">
-      <p class="photo-hint">Take photos of the finished dish, upload them to Google Drive, and paste the shareable links below. In Drive: right-click the photo → Share → Anyone with the link → Copy link.</p>
+      <p class="photo-hint">Take photos of the finished dish, upload them to Google Drive, and paste the shareable links below.</p>
       <div class="field-group">
         <label class="field-label">Photo Link 1</label>
         <input type="url" id="photo-1" placeholder="https://drive.google.com/...">
@@ -460,7 +506,6 @@
       </div>
     </div>
 
-    <!-- 07 SIGN-OFF -->
     <div>
       <div class="section-head"><span class="section-number">07</span><span class="section-title">Next Steps &amp; Sign-Off</span></div>
       <div class="section-divider"></div>
@@ -497,11 +542,10 @@
   </div>
 </div>
 
-<!-- SUCCESS -->
 <div id="success-screen">
   <div class="success-card">
     <div class="success-icon">✓</div>
-    <div class="success-title">Recipe Submitted</div>
+    <div class="success-title" id="success-title">Recipe Submitted</div>
     <p class="success-sub" id="success-detail">Saved to your Recipes sheet.</p>
     <button class="btn btn-primary" onclick="startNewForm()" style="width:100%;justify-content:center;margin-top:8px">Submit Another Recipe</button>
   </div>
@@ -510,55 +554,16 @@
 <div id="toast"></div>
 
 <script>
-const SCRIPT_CONTENT = `function doPost(e) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Recipes") || ss.getActiveSheet();
-    var data = JSON.parse(e.postData.contents);
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
-        "Timestamp","Recipe Name","Chef","Date","Station","Version",
-        "Target Yield","Portion Size","Recipe Prep","Actual Prep",
-        "Recipe Total","Actual Total","Ingredients","Total Cost",
-        "Sourcing Notes","Build Sheet","Instructions","Techniques","Equipment",
-        "Flavor Rating","Flavor Notes","Appearance Rating","Appearance Notes",
-        "Aroma Rating","Aroma Notes","Difficulty Rating","Difficulty Notes",
-        "Photo 1","Photo 2","Photo 3",
-        "Next Version Changes","Status","Additional Notes"
-      ]);
-    }
-    sheet.appendRow([
-      new Date().toLocaleString(),
-      data.recipeName || "", data.chefName || "", data.devDate || "",
-      data.station || "", data.version || "",
-      data.targetYield || "", data.portionSize || "",
-      data.recipePrep || "", data.actualPrep || "",
-      data.recipeTotal || "", data.actualTotal || "",
-      data.ingredients || "", data.totalCost || "",
-      data.sourcingNotes || "", data.buildSheet || "",
-      data.instructions || "", data.techniques || "", data.equipment || "",
-      data.flavorRating || "", data.flavorNotes || "",
-      data.appearanceRating || "", data.appearanceNotes || "",
-      data.aromaRating || "", data.aromaNotes || "",
-      data.difficultyRating || "", data.difficultyNotes || "",
-      data.photo1 || "", data.photo2 || "", data.photo3 || "",
-      data.nextVersion || "", data.status || "", data.additionalNotes || ""
-    ]);
-    return ContentService.createTextOutput(JSON.stringify({result:"success"})).setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({result:"error",message:err.toString()})).setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
-
 let ratings = { flavor: 0, appearance: 0, aroma: 0, difficulty: 0 };
 let selectedStatus = '';
 let ingredientRows = [];
 let rowIdCounter = 0;
 let dishIdCounter = 0;
 let componentCounters = {};
+let currentEditId = null;
+let fetchedRecipes = [];
 
 window.onload = function() {
-  document.getElementById('script-display').value = SCRIPT_CONTENT;
   const savedUrl = localStorage.getItem('dbs_sheets_url');
   if (savedUrl) {
     showApp();
@@ -571,8 +576,182 @@ window.onload = function() {
   addDish();
 };
 
-function copyScript() {
-  navigator.clipboard.writeText(SCRIPT_CONTENT).then(() => showToast('Script copied!', 'success'));
+function toggleLoadPanel() {
+  const body = document.getElementById('load-panel-body');
+  const toggle = document.getElementById('load-toggle');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+}
+
+async function fetchRecipes() {
+  const url = localStorage.getItem('dbs_sheets_url');
+  if (!url) { showToast('No Google Sheets URL configured', 'error'); return; }
+  const statusEl = document.getElementById('load-status');
+  const select = document.getElementById('recipe-select');
+  const btnLoad = document.getElementById('btn-load');
+  statusEl.className = 'load-status';
+  statusEl.textContent = 'Fetching…';
+  select.disabled = true;
+  btnLoad.disabled = true;
+  try {
+    const res = await fetch(url + '?filter=all');
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (data.result === 'error') throw new Error(data.message);
+    fetchedRecipes = data.recipes || [];
+    if (fetchedRecipes.length === 0) {
+      statusEl.className = 'load-status err';
+      statusEl.textContent = 'No recipes found in Sheets.';
+      return;
+    }
+    select.innerHTML = '<option value="">— choose a recipe —</option>';
+    fetchedRecipes.forEach((r, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      const status = r['Status'] ? ` [${r['Status']}]` : '';
+      opt.textContent = (r['Recipe Name'] || 'Untitled') + status;
+      select.appendChild(opt);
+    });
+    select.disabled = false;
+    select.onchange = () => { btnLoad.disabled = select.value === ''; };
+    statusEl.className = 'load-status ok';
+    statusEl.textContent = `${fetchedRecipes.length} recipe${fetchedRecipes.length !== 1 ? 's' : ''} loaded.`;
+  } catch (err) {
+    statusEl.className = 'load-status err';
+    statusEl.textContent = 'Fetch failed — check your Apps Script URL.';
+    console.error(err);
+  }
+}
+
+function loadSelectedRecipe() {
+  const select = document.getElementById('recipe-select');
+  const idx = select.value;
+  if (idx === '') return;
+  const r = fetchedRecipes[parseInt(idx)];
+  if (!r) return;
+  const recipeName = document.getElementById('recipe-name').value.trim();
+  if (recipeName && recipeName !== r['Recipe Name']) {
+    if (!confirm('Loading this recipe will replace what\'s currently in the form. Continue?')) return;
+  }
+  currentEditId = r['Recipe ID'] || null;
+  document.getElementById('edit-banner-name').textContent = r['Recipe Name'] || 'Unnamed Recipe';
+  document.getElementById('edit-banner').classList.add('visible');
+  document.getElementById('submit-btn').classList.add('editing');
+  document.querySelector('#submit-btn .btn-text').textContent = 'Save Changes';
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('recipe-name', r['Recipe Name']);
+  set('chef-name', r['Chef']);
+  set('dev-date', r['Date']);
+  set('version', r['Version']);
+  set('target-yield', r['Target Yield']);
+  set('portion-size', r['Portion Size']);
+  set('recipe-prep', r['Recipe Prep']);
+  set('actual-prep', r['Actual Prep']);
+  set('recipe-total', r['Recipe Total']);
+  set('actual-total', r['Actual Total']);
+  set('sourcing-notes', r['Sourcing Notes']);
+  set('instructions', r['Instructions']);
+  set('techniques', r['Techniques']);
+  set('equipment', r['Equipment']);
+  set('flavor-notes', r['Flavor Notes']);
+  set('appearance-notes', r['Appearance Notes']);
+  set('aroma-notes', r['Aroma Notes']);
+  set('difficulty-notes', r['Difficulty Notes']);
+  set('photo-1', r['Photo 1']);
+  set('photo-2', r['Photo 2']);
+  set('photo-3', r['Photo 3']);
+  set('next-version', r['Next Version Changes']);
+  set('additional-notes', r['Additional Notes']);
+  const stationEl = document.getElementById('station');
+  if (stationEl && r['Station']) stationEl.value = r['Station'];
+  ['flavor','appearance','aroma','difficulty'].forEach(field => {
+    const colMap = { flavor: 'Flavor Rating', appearance: 'Appearance Rating', aroma: 'Aroma Rating', difficulty: 'Difficulty Rating' };
+    const val = parseInt(r[colMap[field]]);
+    if (val >= 1 && val <= 5) setRating(field, val);
+  });
+  if (r['Status']) setStatus(r['Status']);
+  document.getElementById('ingredient-body').innerHTML = '';
+  ingredientRows = [];
+  rowIdCounter = 0;
+  const ingLines = (r['Ingredients'] || '').split('\n').filter(l => l.trim());
+  if (ingLines.length > 0) {
+    ingLines.forEach(line => {
+      const parts = line.split('|').map(p => p.trim());
+      const id = rowIdCounter;
+      addIngredientRow();
+      const row = document.getElementById(`row-${id}`);
+      if (row) {
+        row.querySelector('[data-field="amount"]').value = parts[0] || '';
+        row.querySelector('[data-field="name"]').value = parts[1] || '';
+        row.querySelector('[data-field="weight"]').value = parts[2] || '';
+        row.querySelector('[data-field="cost"]').value = (parts[3] || '').replace('$','');
+      }
+    });
+    while (ingredientRows.length < 8) addIngredientRow();
+  } else {
+    for (let i = 0; i < 8; i++) addIngredientRow();
+  }
+  updateTotalCost();
+  document.getElementById('build-dishes-container').innerHTML = '';
+  dishIdCounter = 0;
+  componentCounters = {};
+  const buildText = r['Build Sheet'] || '';
+  const dishBlocks = buildText.split('---').map(b => b.trim()).filter(Boolean);
+  if (dishBlocks.length > 0) {
+    dishBlocks.forEach(block => {
+      const lines = block.split('\n');
+      const dishName = (lines.find(l => l.startsWith('DISH:')) || '').replace('DISH:','').trim();
+      const cooking = (lines.find(l => l.startsWith('COOKING:')) || '').replace('COOKING:','').trim();
+      const plating = (lines.find(l => l.startsWith('PLATING:')) || '').replace('PLATING:','').trim();
+      const compStart = lines.findIndex(l => l.trim() === 'COMPONENTS:');
+      const components = [];
+      if (compStart !== -1) {
+        for (let i = compStart + 1; i < lines.length; i++) {
+          const cl = lines[i].trim();
+          if (cl.startsWith('COOKING:') || cl.startsWith('PLATING:') || cl.startsWith('DISH:') || cl === '') break;
+          components.push(cl);
+        }
+      }
+      const id = dishIdCounter;
+      addDish();
+      const dishEl = document.getElementById(`dish-${id}`);
+      if (dishEl) {
+        dishEl.querySelector('.build-dish-name').value = dishName;
+        dishEl.querySelector('.build-cooking').value = cooking;
+        dishEl.querySelector('.build-plating').value = plating;
+        const compBody = document.getElementById(`comp-body-${id}`);
+        if (compBody) compBody.innerHTML = '';
+        componentCounters[id] = 0;
+        components.forEach(comp => {
+          const dashIdx = comp.indexOf(' — ');
+          const amount = dashIdx !== -1 ? comp.substring(0, dashIdx).trim() : '';
+          const compName = dashIdx !== -1 ? comp.substring(dashIdx + 3).trim() : comp.trim();
+          const cid = componentCounters[id];
+          addComponent(id);
+          const amountEl = document.querySelector(`[data-dish="${id}"][data-cid="${cid}"][data-field="amount"]`);
+          const nameEl = document.querySelector(`[data-dish="${id}"][data-cid="${cid}"][data-field="name"]`);
+          if (amountEl) amountEl.value = amount;
+          if (nameEl) nameEl.value = compName;
+        });
+        while (componentCounters[id] < 4) addComponent(id);
+      }
+    });
+  } else {
+    addDish();
+  }
+  document.getElementById('load-panel-body').classList.remove('open');
+  document.getElementById('load-toggle').classList.remove('open');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast(`${r['Recipe Name']} loaded for editing`, 'success');
+}
+
+function clearEditMode() {
+  currentEditId = null;
+  document.getElementById('edit-banner').classList.remove('visible');
+  document.getElementById('submit-btn').classList.remove('editing');
+  document.querySelector('#submit-btn .btn-text').textContent = 'Submit to Google Sheets';
+  startNewForm();
 }
 
 function saveConfig() {
@@ -598,7 +777,6 @@ function showApp() {
   document.getElementById('app-form').style.display = 'block';
 }
 
-// INGREDIENTS
 function addIngredientRow() {
   const id = rowIdCounter++;
   const tbody = document.getElementById('ingredient-body');
@@ -644,7 +822,6 @@ function getIngredients() {
   return rows.join('\n');
 }
 
-// BUILD SHEET
 function addDish() {
   const id = dishIdCounter++;
   componentCounters[id] = 0;
@@ -665,11 +842,11 @@ function addDish() {
     <div class="build-dish-fields">
       <div class="field-group">
         <label class="field-label">Cooking Method / To-Order Instructions</label>
-        <textarea class="build-cooking" data-dish="${id}" placeholder="Sear in oiled pan over medium heat. Bake at 500° for 6 minutes..." style="min-height:80px"></textarea>
+        <textarea class="build-cooking" data-dish="${id}" placeholder="Sear in oiled pan..." style="min-height:80px"></textarea>
       </div>
       <div class="field-group">
         <label class="field-label">Plating Instructions</label>
-        <textarea class="build-plating" data-dish="${id}" placeholder="Cut into 4 triangles. Drizzle with sauce. Garnish with..." style="min-height:70px"></textarea>
+        <textarea class="build-plating" data-dish="${id}" placeholder="Cut into 4 triangles..." style="min-height:70px"></textarea>
       </div>
     </div>
   `;
@@ -721,7 +898,6 @@ function getBuildSheet() {
   return result.join('\n\n---\n\n');
 }
 
-// RATINGS
 function setRating(field, value) {
   ratings[field] = value;
   document.getElementById(`rating-display-${field}`).textContent = value + '/5';
@@ -730,15 +906,14 @@ function setRating(field, value) {
   });
 }
 
-// STATUS
 function setStatus(value) {
   selectedStatus = value;
   document.querySelectorAll('#status-grid .status-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.textContent.includes(value.replace('↺ ','').replace('✓ ','').replace('★ ','').replace('✕ ','')));
+    const clean = value.replace('↺ ','').replace('✓ ','').replace('★ ','').replace('✕ ','');
+    btn.classList.toggle('selected', btn.textContent.includes(clean));
   });
 }
 
-// SUBMIT
 async function submitForm() {
   const url = localStorage.getItem('dbs_sheets_url');
   if (!url) { showToast('No Google Sheets URL configured', 'error'); return; }
@@ -747,12 +922,12 @@ async function submitForm() {
     document.getElementById('recipe-name').focus();
     return;
   }
-
   const btn = document.getElementById('submit-btn');
   btn.classList.add('loading');
   btn.disabled = true;
-
+  const isEditing = !!currentEditId;
   const payload = {
+    recipeId: currentEditId || '',
     recipeName: document.getElementById('recipe-name').value,
     chefName: document.getElementById('chef-name').value,
     devDate: document.getElementById('dev-date').value,
@@ -786,7 +961,6 @@ async function submitForm() {
     status: selectedStatus,
     additionalNotes: document.getElementById('additional-notes').value
   };
-
   try {
     const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
     const text = await res.text();
@@ -794,8 +968,13 @@ async function submitForm() {
     try { result = JSON.parse(text); } catch { result = { result: 'success' }; }
     if (result.result === 'error') throw new Error(result.message);
     document.getElementById('app-form').style.display = 'none';
+    document.getElementById('edit-banner').classList.remove('visible');
     document.getElementById('success-screen').style.display = 'flex';
-    document.getElementById('success-detail').textContent = `${payload.recipeName} saved to your Recipes sheet.`;
+    document.getElementById('success-title').textContent = isEditing ? 'Recipe Updated' : 'Recipe Submitted';
+    document.getElementById('success-detail').textContent = isEditing
+      ? `${payload.recipeName} has been updated in your Recipes sheet.`
+      : `${payload.recipeName} saved to your Recipes sheet.`;
+    currentEditId = null;
   } catch (err) {
     console.error(err);
     showToast('Submit failed — check your Apps Script URL', 'error');
@@ -805,6 +984,10 @@ async function submitForm() {
 }
 
 function startNewForm() {
+  currentEditId = null;
+  document.getElementById('edit-banner').classList.remove('visible');
+  document.getElementById('submit-btn').classList.remove('editing');
+  document.querySelector('#submit-btn .btn-text').textContent = 'Submit to Google Sheets';
   document.querySelectorAll('input[type="text"], input[type="url"], textarea, select').forEach(el => {
     if (el.id !== 'dev-date') el.value = '';
   });
